@@ -1,0 +1,14 @@
+{
+    "name": "nguyenthanhworkspace/laravel-multienv",
+    "type": "library",
+    "require": {
+        "php": ">=8.0",
+        "laravel/framework": "^10.0"
+    },
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Nguyenthanhworkspace\\LaravelMultienv\\": "src/"
+        }
+    }
+}
