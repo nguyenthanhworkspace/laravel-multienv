@@ -4,10 +4,10 @@ namespace Nguyenthanhworkspace\LaravelMultienv\Bootstrappers;
 
 use Dotenv\Dotenv;
 use Illuminate\Support\Env;
-use Symfony\Component\Finder\Finder;
 use Symfony\Component\Console\Input\ArgvInput;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Foundation\Bootstrap\LoadEnvironmentVariables as LaravelLoadEnvironmentVariables;
+
 
 class LoadEnvironmentVariables extends LaravelLoadEnvironmentVariables
 {
@@ -47,7 +47,7 @@ class LoadEnvironmentVariables extends LaravelLoadEnvironmentVariables
     public function bootstrap(Application $app): void
     {
         $this->setConfigEnvs($app);
-        $this->handleDomain($app);
+        $this->handleTenancy($app);
         $this->putEnvCaches($app);
 
         parent::bootstrap($app);
@@ -56,7 +56,7 @@ class LoadEnvironmentVariables extends LaravelLoadEnvironmentVariables
     /**
      * Create a Dotenv instance.
      *
-     * @param \Illuminate\Contracts\Foundation\Application $app
+     * @param  \Illuminate\Contracts\Foundation\Application  $app
      *
      * @return \Dotenv\Dotenv
      */
@@ -66,20 +66,14 @@ class LoadEnvironmentVariables extends LaravelLoadEnvironmentVariables
         $envsFolder = ($this->configEnvs['folder'] ?? 'envs');
 
         /** @var string */
-        $envsCustomPath = $app->environmentPath() . '/' . $envsFolder;
-
-        /** @var string */
-        $ignored = $this->configEnvs['ignored'] ?? '/(?:\.env)\.(example|testing|staging)/';
-
-        /** @var string[] */
-        $envsInRootDirectory = $this->getEnvsFilenameInRootDirectory($app, $ignored);
+        $envsCustomPath = $app->environmentPath().'/'.$envsFolder;
 
         putenv("DOMAIN_ENV_FILENAME={$this->domainEnvFilename}");
 
         return Dotenv::create(
             Env::getRepository(),
             [$app->environmentPath(), $envsCustomPath],
-            [$app->environmentFile(), ...$envsInRootDirectory, $this->domainEnvFilename], // @phpstan-ignore-line
+            [$app->environmentFile(), $this->domainEnvFilename], // @phpstan-ignore-line
             false
         );
     }
@@ -87,7 +81,7 @@ class LoadEnvironmentVariables extends LaravelLoadEnvironmentVariables
     /**
      * Configure the $configEnvs variable with the data from the config `.envs`.
      *
-     * @param \Illuminate\Contracts\Foundation\Application $app
+     * @param  \Illuminate\Contracts\Foundation\Application  $app
      *
      * @return void
      */
@@ -101,18 +95,18 @@ class LoadEnvironmentVariables extends LaravelLoadEnvironmentVariables
     /**
      * Handles key environment variables and custom key `env`.
      *
-     * @param \Illuminate\Contracts\Foundation\Application $app
+     * @param  \Illuminate\Contracts\Foundation\Application  $app
      *
      * @return void
      */
-    private function handleDomain(Application $app): void
+    private function handleTenancy(Application $app): void
     {
-        if (empty($domain = $this->getDomain($app))) {
+        if (empty($domain = $this->getTenancy($app))) {
             return; // @codeCoverageIgnore
         }
 
         // By default the `.env.<domain>` file will take precedence over all other `.env` files!
-        $this->domainEnvFilename = '.env.' . $domain;
+        $this->domainEnvFilename = '.env.'.$domain;
 
         /** @var array<string, array<string, string>> */
         $domainsCachesEnv = $this->configEnvs['domains'] ?? [];
@@ -122,11 +116,12 @@ class LoadEnvironmentVariables extends LaravelLoadEnvironmentVariables
 
         // When there is no configuration in `config('envs.domains.<your-domain>')`,
         // nothing should be done!
-        if (! empty($domainCacheEnvs)) {
+
+        if (!empty($domainCacheEnvs)) {
             // Only keys ending with the suffix of `_CACHE`
             $this->domainCacheEnvs = array_filter(
                 $domainCacheEnvs,
-                fn (string $envName) => str_ends_with($envName, '_CACHE'),
+                fn(string $envName) => str_ends_with($envName, '_CACHE'),
                 ARRAY_FILTER_USE_KEY
             );
 
@@ -137,38 +132,37 @@ class LoadEnvironmentVariables extends LaravelLoadEnvironmentVariables
     /**
      * Retrieves the value for the domain/subdomain `.env` file name.
      *
-     * @param \Illuminate\Contracts\Foundation\Application $app
+     * @param  \Illuminate\Contracts\Foundation\Application  $app
      *
      * @return string
      */
-    private function getDomain(Application $app): string
+    private function getTenancy(Application $app): string
     {
-        $domain = '';
-
-        // putenv("--domain=domain.test");
-        // if (! empty($envDomain = getenv('--domain'))) {
-        //     $argv = array_merge([''], ["--domain={$envDomain}"]);
-        // }
+        $tenancy = '';
 
         $input = new ArgvInput();
 
         $isRunningWithArtisanCall = boolval(getenv('RUNNING_IN_ARTISAN_CALL'));
 
-        if (($app->runningInConsole() || $isRunningWithArtisanCall) && $input->hasParameterOption('--domain')) {
-            $domain = $input->getParameterOption('--domain');
-        } elseif ($app->has('request')) { /** @phpstan-ignore-line */
-            $domain = request()->getHost(); // OR Arr::get($_SERVER, 'SERVER_NAME')
+        if (($app->runningInConsole() || $isRunningWithArtisanCall) && $input->hasParameterOption('--tenants')) {
+            $tenancy = $input->getParameterOption('--tenants');
+        } elseif ($app->has('request')) {
+            $tenancy = request()->getHost();
+            $parts = explode('.', $tenancy);
+
+            // Get the subdomain
+            $tenancy = $parts[0];
         }
 
         putenv('RUNNING_IN_ARTISAN_CALL');
 
-        return strval($domain);
+        return strval($tenancy);
     }
 
     /**
      * Add domain variables prefixed in putenv.
      *
-     * @param \Illuminate\Contracts\Foundation\Application $app
+     * @param  \Illuminate\Contracts\Foundation\Application  $app
      *
      * @return void
      */
@@ -184,55 +178,9 @@ class LoadEnvironmentVariables extends LaravelLoadEnvironmentVariables
 
         foreach ($domainCacheEnvs as $cacheEnvName => $cacheEnvValue) {
             /** @example /laravel-app/bootstrap/cache/config-domain-tld.php */
-            $cachedFilename = $app->bootstrapPath('cache/' . $cacheEnvValue);
+            $cachedFilename = $app->bootstrapPath('cache/'.$cacheEnvValue);
 
             putenv("$cacheEnvName=$cachedFilename");
         }
-    }
-
-    /**
-     * Retrieve `.envs` files in $app->environmentPath() path.
-     *
-     * @param \Illuminate\Contracts\Foundation\Application $app
-     * @param string $envsIgnored Regex with .envs files in `$app->environmentPath()` that will be ignored
-     *
-     * @return string[]
-     */
-    private function getEnvsFilenameInRootDirectory(Application $app, string $envsIgnored): array
-    {
-        $envsFile = Finder::create();
-
-        $envsFile->files()
-                 ->depth(0)
-                 ->ignoreDotFiles(false)
-                 ->name('/^\.env/')
-                 ->notName(['.env', $app->environmentFile(), $envsIgnored])
-                 ->in($app->environmentPath())
-                 ->sortByName(true);
-
-        $envsFilename = [];
-
-        /** @var \Symfony\Component\Finder\SplFileInfo $file */
-        foreach ($envsFile as $file) {
-            $envsFilename[] = $file->getFilename();
-        }
-
-        // When the sorted key does not exist in the settings,
-        // then default sorting is used, default natural order algorithm.
-        natcasesort($envsFilename);
-
-        /** @var string[] */
-        $sorted = $this->configEnvs['sorted'] ?? [];
-
-        if (! empty($sorted)) {
-            usort($envsFilename, function (string $prev, string $next) use ($sorted) {
-                $prevPosition = array_search($prev, $sorted);
-                $nextPosition = array_search($next, $sorted);
-
-                return intval($prevPosition) - intval($nextPosition);
-            });
-        }
-
-        return $envsFilename;
     }
 }

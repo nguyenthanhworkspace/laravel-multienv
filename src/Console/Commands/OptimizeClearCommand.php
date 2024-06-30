@@ -22,7 +22,7 @@ class OptimizeClearCommand extends LaravelOptimizeClearCommand
     public function callSilent($command, array $arguments = [])
     {
         if (in_array($command, ['route:clear', 'config:clear'])) {
-            $arguments = array_merge($arguments, ['--domain' => $this->option('domain')]);
+            $arguments = array_merge($arguments, ['--tenants' => $this->option('tenants')]);
         }
 
         return parent::callSilent($command, $arguments);

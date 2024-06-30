@@ -21,7 +21,7 @@ class OptimizeCommand extends LaravelOptimizeCommand
      */
     public function callSilent($command, array $arguments = [])
     {
-        $arguments = array_merge($arguments, ['--domain' => $this->option('domain')]);
+        $arguments = array_merge($arguments, ['--tenants' => $this->option('tenants')]);
 
         return parent::callSilent($command, $arguments);
     }

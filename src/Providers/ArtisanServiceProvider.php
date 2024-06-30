@@ -2,7 +2,6 @@
 
 namespace Nguyenthanhworkspace\LaravelMultienv\Providers;
 
-use Illuminate\Console\Signals;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Nguyenthanhworkspace\LaravelMultienv\Console\Commands\OptimizeCommand;
@@ -19,7 +18,7 @@ class ArtisanServiceProvider extends ServiceProvider implements DeferrableProvid
      *
      * @var array<string, string>
      */
-    protected $commands = [
+    protected array $commands = [
         'ConfigCache' => ConfigCacheCommand::class,
         'ConfigClear' => ConfigClearCommand::class,
         'Optimize' => OptimizeCommand::class,
@@ -36,14 +35,6 @@ class ArtisanServiceProvider extends ServiceProvider implements DeferrableProvid
     public function register(): void
     {
         $this->registerCommands($this->commands);
-
-        // @codeCoverageIgnoreStart
-        Signals::resolveAvailabilityUsing(function () {
-            return $this->app->runningInConsole()
-                && ! $this->app->runningUnitTests()
-                && extension_loaded('pcntl');
-        });
-        // @codeCoverageIgnoreEnd
     }
 
     /**
@@ -51,7 +42,7 @@ class ArtisanServiceProvider extends ServiceProvider implements DeferrableProvid
      *
      * @return string[]
      */
-    public function provides()
+    public function provides(): array
     {
         return array_values($this->commands);
     }

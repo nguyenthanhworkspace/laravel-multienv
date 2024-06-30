@@ -21,7 +21,7 @@ class ConfigCacheCommand extends LaravelConfigCacheCommand
      */
     public function callSilent($command, array $arguments = [])
     {
-        $arguments = array_merge($arguments, ['--domain' => $this->option('domain')]);
+        $arguments = array_merge($arguments, ['--tenants' => $this->option('tenants')]);
 
         return parent::call($command, $arguments);
     }

@@ -21,26 +21,26 @@ class RouteCacheCommand extends FoundationRouteCacheCommand
     protected function getFreshApplicationRoutes()
     {
         /** @var string */
-        $domain = strval($this->option('domain'));
+        $tenants = strval($this->option('tenants'));
 
-        if (empty($domain)) {
+        if (empty($tenants)) {
             return parent::getFreshApplicationRoutes();
         }
 
         $routes = $this->newAppRoutes();
 
         /** @var \Illuminate\Routing\RouteCollection */
-        $routesDomain = $this->laravel->build(RouteCollection::class);
+        $routesTenant = $this->laravel->build(RouteCollection::class);
 
         /** @var \Illuminate\Routing\Route $route */
         foreach ($routes as $route) {
-            if (str_contains($route->getDomain() ?? '', strtolower($domain))) {
-                $routesDomain->add($route);
+            if (str_contains($route->getDomain() ?? '', strtolower($tenants))) {
+                $routesTenant->add($route);
             }
         }
 
-        if (count($routesDomain) > 0) {
-            $routes = $routesDomain;
+        if (count($routesTenant) > 0) {
+            $routes = $routesTenant;
 
             app('router')->setRoutes($routes);
         }
@@ -49,7 +49,7 @@ class RouteCacheCommand extends FoundationRouteCacheCommand
     }
 
     /**
-     * Creating a new route object to store only those filtered by the domain.
+     * Creating a new route object to store only those filtered by the tenants.
      *
      * @return \Illuminate\Routing\RouteCollection
      */

@@ -5,6 +5,8 @@
         "php": ">=8.0",
         "laravel/framework": "^10.0"
     },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "license": "MIT",
     "autoload": {
         "psr-4": {

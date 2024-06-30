@@ -21,14 +21,14 @@ trait ConsoleCallTrait
     {
         putenv('RUNNING_IN_ARTISAN_CALL=true');
 
-        $removeDomainFromArgv = array_filter($_SERVER['argv'] ?? [], function ($arg) {
-            return ! str_starts_with((string) $arg, '--domain');
+        $removeTenantFromArgv = array_filter($_SERVER['argv'] ?? [], function ($arg) {
+            return ! str_starts_with((string) $arg, '--tenants');
         });
 
-        $_SERVER['argv'] = $removeDomainFromArgv;
+        $_SERVER['argv'] = $removeTenantFromArgv;
 
-        if (! empty($domain = $parameters['--domain'] ?? [])) {
-            $_SERVER['argv'][] = "--domain={$domain}";
+        if (! empty($domain = $parameters['--tenants'] ?? [])) {
+            $_SERVER['argv'][] = "--tenants={$domain}";
         }
 
         return parent::call($command, $parameters, $outputBuffer);
